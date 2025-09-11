@@ -1,0 +1,75 @@
+services:
+  api:
+    build: ./backend
+    ports:
+      - "8019:8000"
+    volumes:
+      - ./backend:/usr/src/app
+      - static_volume:/usr/src/app/staticfiles
+      - media_volume:/usr/src/app/media
+    env_file:
+      - ./backend/.env
+    networks:
+      - app-network
+    command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+    depends_on:
+      db:
+        condition: service_healthy
+    expose:
+      - 8000
+    healthcheck:
+      test: ["CMD", "python", "manage.py", "check", "--database", "default"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+  nginx:
+    build: ./docker/nginx
+    ports:
+      - "8018:80"
+    networks:
+      - app-network
+    volumes:
+      - static_volume:/static
+      - media_volume:/media
+    depends_on:
+      api:
+        condition: service_healthy
+  web:
+    build: ./frontend
+    ports:
+      - "5174:5173"
+    volumes:
+      - ./frontend:/app
+      - ./frontend/node_modules:/app/node_modules
+    networks:
+      - app-network
+    env_file:
+      - ./backend/.env
+  db:
+    image: postgres:17
+    ports:
+      - "5418:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    env_file:
+      - ./backend/.env
+    networks:
+      - app-network
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-django_user} -d ${POSTGRES_DB:-django_db}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+networks:
+  app-network:
+    driver: bridge
+volumes:
+  postgres_data:
+  static_volume:
+  media_volume:
