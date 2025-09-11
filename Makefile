@@ -109,7 +109,7 @@ clean:
 # Run tests in Docker
 test:
 	@echo "🧪 Running tests..."
-	docker compose exec api python manage.py test
+	docker compose exec api pytest
 
 # Run linting locally
 lint:
