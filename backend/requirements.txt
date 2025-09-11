@@ -1,2 +1,5 @@
-Django
-psycopg2-binary
+asgiref==3.9.1 ; python_version >= "3.13"
+django==5.2.6 ; python_version >= "3.13"
+psycopg2-binary==2.9.10 ; python_version >= "3.13"
+sqlparse==0.5.3 ; python_version >= "3.13"
+tzdata==2025.2 ; python_version >= "3.13" and sys_platform == "win32"
