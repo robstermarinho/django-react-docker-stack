@@ -23,6 +23,7 @@ services:
       timeout: 10s
       retries: 5
       start_period: 60s
+
   nginx:
     build: ./docker/nginx
     ports:
@@ -35,6 +36,7 @@ services:
     depends_on:
       api:
         condition: service_healthy
+
   web:
     build: ./frontend
     ports:
@@ -46,6 +48,7 @@ services:
       - app-network
     env_file:
       - ./backend/.env
+
   db:
     image: postgres:17
     ports:
@@ -66,9 +69,11 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
+
 networks:
   app-network:
     driver: bridge
+
 volumes:
   postgres_data:
   static_volume:

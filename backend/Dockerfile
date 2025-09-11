@@ -1,5 +1,7 @@
-# pull Python  image
 FROM python:3.13-slim-bookworm
+
+# Create non-root user
+RUN groupadd -r sysuser && useradd -r -g sysuser sysuser
 
 # Set working directory
 WORKDIR /usr/src/app
@@ -8,16 +10,27 @@ WORKDIR /usr/src/app
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
-# Install app dependencies
+# Install system dependencies
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends netcat-openbsd gcc postgresql redis gnupg2 curl && \
+    apt-get install -y --no-install-recommends netcat-openbsd gcc postgresql-client libpq-dev && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# install dependencies
-COPY ./requirements.txt .
-RUN pip install --upgrade pip && pip install -r requirements.txt
+# Install requirements
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
+# Install dev requirements (DEV ONLY)
+COPY requirements-dev.txt .
+RUN pip install --no-cache-dir -r requirements-dev.txt
+
+# Copy other project files
 COPY . .
 
-RUN ["chmod", "+x", "/usr/src/app/entrypoint.sh"]
+# Set ownership and permissions
+RUN chown -R sysuser:sysuser /usr/src/app && \
+    chmod +x /usr/src/app/entrypoint.sh
+
+# Switch to non-root user
+USER sysuser
+
 ENTRYPOINT ["/usr/src/app/entrypoint.sh"]
