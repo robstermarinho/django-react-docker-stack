@@ -1,94 +1,108 @@
-# Django + React + Docker Fullstack Application
+# Django + React Fullstack Application
 
-A full-stack web application built with Django (backend), React (frontend), PostgreSQL (database), and Nginx (reverse proxy), all containerized with Docker.
+Complete stack with Django backend, React frontend, PostgreSQL and Nginx.
 
-## Architecture
+## 🛠 Tech Stack
 
-- **Backend**: Django REST API
-- **Frontend**: React with Vite
-- **Database**: PostgreSQL 17
-- **Reverse Proxy**: Nginx
-- **Containerization**: Docker & Docker Compose
+- **Backend:** Django 5.2 + PostgreSQL
+- **Frontend:** React + Vite + TypeScript (Node.js 22)
+- **Proxy:** Nginx
+- **Containerization:** Docker + Docker Compose
+- **Dependency Management:** Poetry + Docker
 
-## Prerequisites
+## 🚀 Getting Started
 
-- Docker
-- Docker Compose
+### Prerequisites
 
-## Installation & Setup
+- Docker and Docker Compose
+- Git
+- Poetry
+- Node.js 22+
 
-1. Clone the repository:
+### Step-by-Step Setup
+
+1. **Clone the repository:**
 ```bash
-git clone <repository-url>
+git clone <repo-url>
 cd django-react-fullstack
 ```
 
-2. Create environment file:
+2. **Start the application:**
 ```bash
-cp backend/.env.example backend/.env
+docker compose up --build
 ```
 
-3. Configure your environment variables in `backend/.env`
 
-4. Build and start all services:
+3. **Create a Django superuser (optional):**
 ```bash
-docker-compose up --build
+docker compose exec api python manage.py createsuperuser
 ```
 
-5. For subsequent runs (without rebuilding):
-```bash
-docker-compose up
-```
 
-## Access URLs
+## 📱 Access Points
 
-- **Frontend (React)**: http://localhost:5174
-- **Backend API (Django)**: http://localhost:8019
-- **Nginx (Reverse Proxy)**: http://localhost:8018
-- **Database (PostgreSQL)**: localhost:5418
+- **Frontend (Vite):** http://localhost:5174
+- **Backend (via Nginx):** http://localhost:8018  
+- **PostgreSQL:** localhost:5418
 
-## Development
 
-### Backend (Django)
-- API runs on port 8000 inside container, exposed on 8019
-- Auto-reloads on code changes
-- Access Django admin at http://localhost:8019/admin
+## 🐳 Docker
 
-### Frontend (React)
-- Vite dev server runs on port 5173 inside container, exposed on 5174
-- Hot module replacement enabled
-- Auto-reloads on code changes
-
-### Database
-- PostgreSQL 17
-- Data persists in Docker volume `postgres_data`
-- Access via localhost:5418
-
-## Useful Commands
+### Useful commands:
 
 ```bash
-# Stop all services
-docker-compose down
-
 # View logs
-docker-compose logs [service-name]
+docker compose logs -f api
 
-# Rebuild specific service
-docker-compose build [service-name]
+# Execute commands in container
+docker compose exec api python manage.py migrate
+docker compose exec api python manage.py createsuperuser
 
-# Run Django migrations
-docker-compose exec api python manage.py migrate
+# Rebuild a specific service
+docker compose up --build api
 
-# Create Django superuser
-docker-compose exec api python manage.py createsuperuser
-
-# Access container shell
-docker-compose exec [service-name] /bin/bash
+# Stop everything
+docker compose down
 ```
 
-## Services
 
-- **api**: Django backend application
-- **web**: React frontend application  
-- **db**: PostgreSQL database
-- **nginx**: Nginx reverse proxy
+## 🔧 Available Make Commands
+
+### Development Environment
+```bash
+make help              # Show all available commands
+make up                # Start development environment
+make up-d              # Start environment (detached mode)
+make clean             # Remove containers and volumes
+```
+
+### Dependency Management (Poetry)
+```bash
+make poetry-install           # Install dependencies locally
+make poetry-add PACKAGE=name  # Add production dependency
+make poetry-add-dev PACKAGE=name # Add development dependency
+make poetry-update            # Update all dependencies
+make poetry-remove PACKAGE=name # Remove dependency
+make poetry-show-outdated     # Show outdated dependencies
+make poetry-export            # Export to requirements.txt
+make poetry-shell             # Open Poetry shell
+```
+
+### Development
+```bash
+make backend-shell       # Shell in backend container
+make backend-restart     # Restart backend container
+make frontend-install    # Install frontend dependencies
+make frontend-build      # Build frontend
+make frontend-restart    # Restart frontend container
+make test               # Run tests
+make lint               # Run local linting
+make format             # Format local code
+```
+
+## ⚙️ Services Architecture
+
+- **nginx** (8018:80) - Reverse proxy, serves static files
+- **api** (Django) - Backend API (internal only)
+- **web** (5174:5173) - React Frontend with Vite
+- **db** (5418:5432) - PostgreSQL with persistent volumes
