@@ -20,4 +20,7 @@ python manage.py showmigrations
 echo "✔ MIGRATE..."
 python manage.py migrate --noinput
 
+echo "✔ COLLECTSTATIC..."
+python manage.py collectstatic --noinput
+
 exec "$@"
