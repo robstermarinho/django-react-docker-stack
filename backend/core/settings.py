@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 
 import os
 from pathlib import Path
+from datetime import timedelta
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -37,9 +38,15 @@ CSRF_TRUSTED_ORIGINS = os.environ.get(
 ).split(" ")
 
 # Application definition
+INSTALLED_APPS = []
 
-INSTALLED_APPS = [
+# Apps
+INSTALLED_APPS += [
     "authentication.apps.AuthenticationConfig",
+]
+
+INSTALLED_APPS += [
+    "django.contrib.sites",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -47,6 +54,21 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
 ]
+
+# REST framework
+INSTALLED_APPS += [
+    "rest_framework",
+    "rest_framework.authtoken",
+    "rest_framework_simplejwt",
+]
+
+# Allauth
+INSTALLED_APPS += [
+    "allauth",
+    "allauth.account",
+    "allauth.socialaccount",
+]
+
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -56,6 +78,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "allauth.account.middleware.AccountMiddleware",
 ]
 
 ROOT_URLCONF = "core.urls"
@@ -63,7 +86,7 @@ ROOT_URLCONF = "core.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [os.path.join(BASE_DIR, "templates")],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -71,6 +94,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "django.template.context_processors.request",
             ],
         },
     },
@@ -145,4 +169,44 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# =========================
+# Authentication: custom user model
+# =========================
+
 AUTH_USER_MODEL = "authentication.User"
+
+# =========================
+# Simple JWT
+# =========================
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=120),  # 2 hours
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=15),  # 15 days
+    "ROTATE_REFRESH_TOKENS": False,
+    "BLACKLIST_AFTER_ROTATION": False,
+    "UPDATE_LAST_LOGIN": True,
+    "SIGNING_KEY": os.environ.get("JWT_SIGNING_KEY", "foo"),
+    "ALGORITHM": "HS512",
+}
+
+# =========================
+# REST framework
+# =========================
+
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    ],
+}
+
+# =========================
+# Allauth
+# =========================
+
+AUTHENTICATION_BACKENDS = [
+    "django.contrib.auth.backends.ModelBackend",
+    "allauth.account.auth_backends.AuthenticationBackend",
+]
+
+SITE_ID = 1
+ACCOUNT_LOGIN_METHODS = {"email", "username"}
