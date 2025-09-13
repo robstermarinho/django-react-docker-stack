@@ -100,9 +100,37 @@ make lint               # Run local linting
 make format             # Format local code
 ```
 
+
 ## ⚙️ Services Architecture
 
 - **nginx** (8018:80) - Reverse proxy, serves static files
 - **api** (Django) - Backend API (internal only)
 - **web** (5174:5173) - React Frontend with Vite
 - **db** (5418:5432) - PostgreSQL with persistent volumes
+
+### Warp (MacOS) Terminal Integration
+
+If you use [Warp](https://www.warp.dev/) terminal on Mac, you can take advantage of enhanced shell integration with auto-warpify features:
+
+```bash
+make warp-api            # Open warpified shell in API container
+make warp-web            # Open warpified shell in frontend container
+```
+
+- **Auto-warpify**: Automatically configures Warp's enhanced shell features inside containers
+- **Smart detection**: Finds running containers automatically
+- **macOS integration**: Opens new Warp tabs with container connection
+- **Fallback support**: Works in regular terminals if Warp is not available
+
+**Manual usage:**
+```bash
+# Connect to any container by name
+./scripts/warp-shell.sh [container_name]
+
+# Examples:
+./scripts/warp-shell.sh api      # API container
+./scripts/warp-shell.sh web      # Frontend container
+./scripts/warp-shell.sh db       # Database container
+```
+
+The script automatically detects the container user, sets up proper permissions, and configures Warp's auto-warpify feature for the best development experience.

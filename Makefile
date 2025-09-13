@@ -1,4 +1,4 @@
-.PHONY: help up up-d poetry-add poetry-add-dev poetry-update poetry-remove poetry-show-outdated poetry-export clean test lint format backend-shell warp-shell frontend-install frontend-build frontend-restart backend-restart
+.PHONY: help up up-d poetry-add poetry-add-dev poetry-update poetry-remove poetry-show-outdated poetry-export clean test lint format backend-shell warp-api warp-web frontend-install frontend-build frontend-restart backend-restart
 
 # Default target
 help:
@@ -16,7 +16,8 @@ help:
 	@echo "  lint          - Run linting"
 	@echo "  format        - Format code"
 	@echo "  backend-shell - Open shell in backend container"
-	@echo "  warp-shell    - Open warpified shell in backend container (auto-detects container)"
+	@echo "  warp-api      - Open warpified shell in API container"
+	@echo "  warp-web      - Open warpified shell in frontend container"
 	@echo "  frontend-install - Install frontend dependencies"
 	@echo "  frontend-build   - Build frontend"
 	@echo "  frontend-restart - Restart frontend container"
@@ -95,10 +96,15 @@ backend-shell:
 	@echo "🐚 Opening shell in backend container..."
 	docker compose exec api /bin/bash
 
-# Open warpified shell in backend container (auto-detects container)
-warp-shell:
-	@echo "🌟 Opening warpified shell in backend container..."
-	./scripts/warp-shell.sh
+# Open warpified shell in API container
+warp-api:
+	@echo "🌟 Opening warpified shell in API container..."
+	./scripts/warp-shell.sh api
+
+# Open warpified shell in frontend container
+warp-web:
+	@echo "🌟 Opening warpified shell in frontend container..."
+	./scripts/warp-shell.sh web
 
 
 # Open local Poetry shell
