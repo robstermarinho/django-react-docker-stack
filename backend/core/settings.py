@@ -69,6 +69,9 @@ INSTALLED_APPS += [
     "allauth.socialaccount",
 ]
 
+# DJ Rest Auth
+INSTALLED_APPS += ["dj_rest_auth"]
+
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
