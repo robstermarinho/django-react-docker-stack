@@ -70,7 +70,10 @@ INSTALLED_APPS += [
 ]
 
 # DJ Rest Auth
-INSTALLED_APPS += ["dj_rest_auth"]
+INSTALLED_APPS += [
+    "dj_rest_auth",
+    "dj_rest_auth.registration",
+]
 
 
 MIDDLEWARE = [
@@ -173,10 +176,15 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # =========================
-# Authentication: custom user model
+# Authentication
 # =========================
 
 AUTH_USER_MODEL = "authentication.User"
+AUTHENTICATION_BACKENDS = [
+    "django.contrib.auth.backends.ModelBackend",
+    "allauth.account.auth_backends.AuthenticationBackend",
+]
+
 
 # =========================
 # Simple JWT
@@ -206,10 +214,24 @@ REST_FRAMEWORK = {
 # Allauth
 # =========================
 
-AUTHENTICATION_BACKENDS = [
-    "django.contrib.auth.backends.ModelBackend",
-    "allauth.account.auth_backends.AuthenticationBackend",
-]
-
 SITE_ID = 1
 ACCOUNT_LOGIN_METHODS = {"email", "username"}
+ACCOUNT_UNIQUE_EMAIL = True
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_EMAIL_VERIFICATION = "none"  # no email verification for now
+
+# =========================
+# Email
+# =========================
+
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+
+# =========================
+# REST Auth
+# =========================
+
+REST_AUTH = {
+    "USE_JWT": True,  # required by dj-rest-auth
+    "JWT_AUTH_HTTPONLY": False,  # should be off, otherwise dj-rest-auth won't send out refresh tokens
+    "REGISTER_SERIALIZER": "authentication.serializers.CustomRegisterSerializer",
+}
