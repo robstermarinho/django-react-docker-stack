@@ -1,4 +1,4 @@
-.PHONY: help up up-d poetry-add poetry-add-dev poetry-update poetry-remove poetry-show-outdated poetry-export clean test lint format backend-shell warp-api warp-web frontend-install frontend-build frontend-restart backend-restart
+.PHONY: help up up-d poetry-add poetry-add-dev poetry-update poetry-remove poetry-show-outdated poetry-export clean test lint format backend-shell warp-api warp-web frontend-install frontend-build frontend-restart backend-restart logs
 
 # Default target
 help:
@@ -22,6 +22,7 @@ help:
 	@echo "  frontend-build   - Build frontend"
 	@echo "  frontend-restart - Restart frontend container"
 	@echo "  backend-restart  - Restart backend container"
+	@echo "  logs             - View logs for a container (usage: make logs CONTAINER=api)"
 
 # Development environment
 up:
@@ -152,3 +153,13 @@ frontend-restart:
 backend-restart:
 	@echo "🔄 Restarting backend container..."
 	docker compose restart api
+
+# View logs for a specific container
+logs:
+	@if [ -z "$(CONTAINER)" ]; then \
+		echo "❌ Usage: make logs CONTAINER=container-name"; \
+		echo "Available containers: api, web, db, nginx, mailcatcher"; \
+		exit 1; \
+	fi
+	@echo "📋 Viewing logs for container: $(CONTAINER)"
+	docker compose logs -f $(CONTAINER)
