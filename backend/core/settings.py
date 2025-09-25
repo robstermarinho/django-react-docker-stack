@@ -218,22 +218,13 @@ SITE_ID = 1
 ACCOUNT_LOGIN_METHODS = ["email"]
 ACCOUNT_UNIQUE_EMAIL = True
 ACCOUNT_LOGOUT_ON_PASSWORD_CHANGE = False
-ACCOUNT_LOGIN_BY_CODE_ENABLED = True
 ACCOUNT_EMAIL_VERIFICATION = "mandatory"
-
-if ACCOUNT_EMAIL_VERIFICATION == "mandatory":
-    ACCOUNT_EMAIL_VERIFICATION_BY_CODE_ENABLED = True
-else:
-    ACCOUNT_EMAIL_VERIFICATION_BY_CODE_ENABLED = False
-
-
 ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*", "password2*"]
 
 # Additional settings for code verification
 ACCOUNT_EMAIL_CONFIRMATION_HMAC = False  # Disable HMAC to use database model
-ACCOUNT_EMAIL_VERIFICATION_BY_CODE_MAX_ATTEMPTS = 5
-ACCOUNT_EMAIL_VERIFICATION_BY_CODE_TIMEOUT = 900  # 15 minutes
 ACCOUNT_CONFIRM_EMAIL_ON_GET = False  # Force POST for verification
+ACCOUNT_ADAPTER = "authentication.adapter.CustomAccountAdapter"
 
 # =========================
 # Email

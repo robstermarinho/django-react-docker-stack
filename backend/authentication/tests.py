@@ -421,9 +421,9 @@ class CustomVerifyEmailViewTests(APITestCase):
         )
 
         # Import the view to get the expected code
-        from .views import CustomVerifyEmailView
-        view_instance = CustomVerifyEmailView()
-        expected_code = view_instance.generate_code_from_key(confirmation.key)
+        from .utils import generate_verification_code
+
+        expected_code = generate_verification_code(confirmation.key)
 
         response = self.client.post(self.verify_url, {
             'email': self.email,
@@ -454,3 +454,69 @@ class CustomVerifyEmailViewTests(APITestCase):
         # Result depends on the actual key validation logic
         # For now, we just check that it doesn't crash
         self.assertIn(response.status_code, [status.HTTP_200_OK, status.HTTP_400_BAD_REQUEST])
+
+    def test_code_verification_exceeds_max_attempts(self):
+        """Lock the confirmation after repeated invalid attempts"""
+        from .views import CustomVerifyEmailView
+        from .utils import generate_verification_code
+
+        confirmation = EmailConfirmation.objects.create(
+            email_address=self.email_address,
+            key='adapter-confirmation-key',
+            sent=timezone.now()
+        )
+
+        actual_code = generate_verification_code(confirmation.key)
+        wrong_code = '111111' if actual_code != '111111' else '222222'
+
+        last_response = None
+        for _ in range(CustomVerifyEmailView.MAX_VERIFICATION_ATTEMPTS):
+            last_response = self.client.post(self.verify_url, {
+                'email': self.email,
+                'code': wrong_code
+            })
+
+        self.assertEqual(last_response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('Too many incorrect verification attempts', str(last_response.data['detail']))
+        self.assertFalse(EmailConfirmation.objects.filter(pk=confirmation.pk).exists())
+
+
+class CustomAccountAdapterTests(TestCase):
+    """Unit tests for the custom account adapter email handling."""
+
+    def test_send_confirmation_mail_includes_generated_code(self):
+        from .adapter import CustomAccountAdapter
+        from .utils import generate_verification_code
+
+        adapter = CustomAccountAdapter()
+        user = User.objects.create_user(
+            email="adapter@example.com",
+            password="ComplexPass123!",
+            username="adapteruser",
+        )
+
+        email_address = EmailAddress.objects.create(
+            user=user,
+            email=user.email,
+            verified=False,
+            primary=True,
+        )
+
+        confirmation = EmailConfirmation.objects.create(
+            email_address=email_address,
+            key="adapter-confirmation-key",
+            sent=timezone.now(),
+        )
+
+        expected_code = generate_verification_code(confirmation.key)
+
+        with patch.object(
+            adapter, "get_email_confirmation_url", return_value="https://example.com/verify"
+        ), patch.object(adapter, "send_mail") as mock_send_mail:
+            adapter.send_confirmation_mail(None, confirmation, signup=True)
+
+        _, to_address, context = mock_send_mail.call_args[0]
+        self.assertEqual(to_address, user.email)
+        self.assertEqual(context["code"], expected_code)
+        self.assertEqual(context["key"], confirmation.key)
+        self.assertTrue(context["activate_url"].startswith("https://example.com/verify"))

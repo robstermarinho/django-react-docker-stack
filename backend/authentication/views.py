@@ -8,13 +8,12 @@ from allauth.account.models import EmailAddress, EmailConfirmation
 from allauth.account.adapter import get_adapter
 from rest_framework.permissions import AllowAny
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from .serializers import CustomVerifyEmailSerializer
 import logging
-import hashlib
-import hmac
-from django.conf import settings
+from .utils import generate_verification_code
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
@@ -32,6 +31,7 @@ class CustomVerifyEmailView(VerifyEmailView):
     CODE_EXPIRY_MINUTES = 15
     MAX_VERIFICATION_ATTEMPTS = 5
     RATE_LIMIT_WINDOW = 60  # seconds
+    ATTEMPT_CACHE_PREFIX = "verify_attempts"
 
     def get_serializer(self, *args, **kwargs):
         return CustomVerifyEmailSerializer(*args, **kwargs)
@@ -89,6 +89,12 @@ class CustomVerifyEmailView(VerifyEmailView):
                 logger.warning(
                     f"Invalid verification code attempt for {email} from IP: {request.META.get('REMOTE_ADDR')}"
                 )
+                attempts, locked = self.record_failed_attempt(email_address)
+                if locked:
+                    return Response(
+                        {"detail": _("Too many incorrect verification attempts. Request a new code.")},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
                 return Response(
                     {"detail": _("Invalid or expired verification code.")},
                     status=status.HTTP_400_BAD_REQUEST,
@@ -96,6 +102,7 @@ class CustomVerifyEmailView(VerifyEmailView):
 
             # Perform secure confirmation
             self.perform_confirmation(request, confirmation, email_address)
+            self.reset_failed_attempts(confirmation)
 
             logger.info(f"Email {email} successfully verified with code")
 
@@ -162,25 +169,8 @@ class CustomVerifyEmailView(VerifyEmailView):
         """
         # For now, we'll use a simple approach based on confirmation key
         # In production, implement proper code generation and validation
-        expected_code = self.generate_code_from_key(confirmation.key)
+        expected_code = generate_verification_code(confirmation.key)
         return provided_code == expected_code
-
-    def generate_code_from_key(self, key):
-        """
-        Generate 6-digit code from confirmation key
-        This is a simplified implementation - use proper cryptographic methods in production
-        """
-        # Use HMAC to generate consistent code from key
-        secret_key = getattr(settings, 'SECRET_KEY', 'default-secret')
-        digest = hmac.new(
-            secret_key.encode('utf-8'),
-            key.encode('utf-8'),
-            hashlib.sha256
-        ).hexdigest()
-
-        # Extract 6 digits from digest
-        code = ''.join(filter(str.isdigit, digest))[:6]
-        return code.zfill(6)  # Pad with zeros if needed
 
     def is_confirmation_expired(self, confirmation):
         """
@@ -213,3 +203,29 @@ class CustomVerifyEmailView(VerifyEmailView):
         except Exception as e:
             logger.error(f"Error performing confirmation: {e}")
             raise ValidationError("Confirmation failed")
+
+    def _attempts_cache_key(self, confirmation_key):
+        return f"{self.ATTEMPT_CACHE_PREFIX}:{confirmation_key}"
+
+    def record_failed_attempt(self, email_address):
+        confirmation = (
+            EmailConfirmation.objects.filter(email_address=email_address)
+            .order_by('-sent')
+            .first()
+        )
+        if not confirmation:
+            return 0, False
+
+        cache_key = self._attempts_cache_key(confirmation.key)
+        attempts = cache.get(cache_key, 0) + 1
+        cache.set(cache_key, attempts, timeout=self.CODE_EXPIRY_MINUTES * 60)
+
+        if attempts >= self.MAX_VERIFICATION_ATTEMPTS:
+            EmailConfirmation.objects.filter(email_address=email_address).delete()
+            cache.delete(cache_key)
+            return attempts, True
+
+        return attempts, False
+
+    def reset_failed_attempts(self, confirmation):
+        cache.delete(self._attempts_cache_key(confirmation.key))
